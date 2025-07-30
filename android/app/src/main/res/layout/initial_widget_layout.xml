@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:background="#E0E0E0"
+    android:padding="8dp">
+
+    <!-- Top Bar: Daily Notes / Vault Selector and Action Buttons -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="#F0F0F0"
+        android:padding="4dp">
+
+        <TextView
+            android:id="@+id/vault_name_text"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Daily Notes"
+            android:textColor="@android:color/black"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:gravity="center_vertical"
+            android:drawableEnd="@android:drawable/arrow_down_float"
+            android:clickable="true"
+            android:focusable="true" />
+
+        <ImageButton
+            android:id="@+id/new_note_button"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@android:drawable/ic_input_add"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="New Note" />
+ 
+        <ImageButton
+            android:id="@+id/save_note_button"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@android:drawable/ic_menu_save"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Save Note" />
+ 
+        <ImageButton
+            android:id="@+id/more_options_button"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:src="@android:drawable/ic_menu_more"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="More Options" />
+
+    </LinearLayout>
+
+    <!-- Main Content Area: Two Panes (Notes List and Editor) -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="horizontal"
+        android:layout_marginTop="8dp"
+        android:background="#FFFFFF">
+
+        <!-- Left Pane: Notes List -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="0.4"
+            android:orientation="vertical"
+            android:padding="8dp"
+            android:background="#F8F8F8">
+
+            <ListView
+                android:id="@+id/notes_list_view"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:divider="@android:color/darker_gray"
+                android:dividerHeight="1dp" />
+
+        </LinearLayout>
+
+        <!-- Right Pane: Markdown Editor with Toolbar and Live Preview (simplified for widget) -->
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="0.6"
+            android:orientation="vertical"
+            android:padding="8dp">
+
+            <!-- Formatting Toolbar -->
+            <LinearLayout
+                android:id="@+id/formatting_toolbar"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:background="#E0E0E0"
+                android:padding="4dp">
+
+                <ImageButton
+                    android:id="@+id/format_h_button"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:src="@android:drawable/ic_menu_edit"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Format Heading" />
+
+                <ImageButton
+                    android:id="@+id/format_b_button"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:src="@android:drawable/ic_menu_edit"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Format Bold" />
+
+                <ImageButton
+                    android:id="@+id/format_i_button"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:src="@android:drawable/ic_menu_edit"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Format Italic" />
+
+                <ImageButton
+                    android:id="@+id/format_u_button"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:src="@android:drawable/ic_menu_edit"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Format Underline" />
+
+                <ImageButton
+                    android:id="@+id/format_s_button"
+                    android:layout_width="30dp"
+                    android:layout_height="30dp"
+                    android:src="@android:drawable/ic_menu_edit"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="Format Strikethrough" />
+
+            </LinearLayout>
+
+            <EditText
+                android:id="@+id/note_content_edittext"
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1"
+                android:hint="Start writing your note..."
+                android:gravity="top|start"
+                android:inputType="textMultiLine"
+                android:background="@null"
+                android:padding="4dp" />
+
+        </LinearLayout>
+    </LinearLayout>
+</LinearLayout>

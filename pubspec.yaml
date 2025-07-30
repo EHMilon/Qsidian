@@ -1,0 +1,47 @@
+name: qsidian
+description: "A lightweight Obsidian helper app with powerful home screen widget support."
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.8.1
+
+dependencies:
+  flutter:
+    sdk: flutter
+  
+  # UI & Icons
+  cupertino_icons: ^1.0.8
+  material_design_icons_flutter: ^7.0.7296
+  
+  # State Management
+  provider: ^6.1.2
+  
+  # File System & Storage
+  path_provider: ^2.1.4
+  file_picker: ^8.1.2
+  shared_preferences: ^2.3.2
+  path: ^1.9.0
+  watcher: ^1.1.0
+  permission_handler: ^11.3.1 
+  flutter_markdown: ^0.7.3+1
+  markdown: ^7.2.2
+  
+  # Home Screen Widget
+  home_widget: ^0.6.0
+  
+  # Utilities
+  intl: ^0.19.0
+  uuid: ^4.5.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+  
+  assets:
+    - assets/images/
+    - assets/icons/
