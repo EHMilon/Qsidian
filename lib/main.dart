@@ -332,8 +332,21 @@ class _MyHomePageState
   String _getVaultDisplayName(String? uriString) {
     if (uriString == null) return "No Vault Selected";
     final Uri uri = Uri.parse(uriString);
-    // Extract the last segment of the path, which is usually the folder name
-    return Uri.decodeComponent(uri.pathSegments.lastWhere((segment) => segment.isNotEmpty, orElse: () => ""));
+    // The last segment of the path is usually the folder name.
+    // We need to handle cases where the URI path might be something like
+    // 'tree/primary:My%20NoteBooks%20/Programming'
+    // We want to extract 'Programming'
+    String path = Uri.decodeComponent(uri.path);
+    List<String> segments = path.split('/').where((s) => s.isNotEmpty).toList();
+
+    // Find the segment that contains the actual folder name (e.g., after 'primary:')
+    for (String segment in segments) {
+      if (segment.contains(':')) {
+        return segment.split(':').last;
+      }
+    }
+    // Fallback if no ':' is found, return the last segment
+    return segments.isNotEmpty ? segments.last : "Selected Vault";
   }
 
   String _getRelativePath(String fileUri) {
@@ -341,49 +354,30 @@ class _MyHomePageState
     final Uri fileParsedUri = Uri.parse(fileUri);
     final Uri vaultParsedUri = Uri.parse(vaultUriString);
 
-    // The actual path segment we care about is often after 'document/primary:...' or 'tree/primary:...'
-    // We need to find the common root and then the relative path from there.
-
+    // Get the path segments, decoding them
     List<String> fileSegments = fileParsedUri.pathSegments.map((s) => Uri.decodeComponent(s)).toList();
     List<String> vaultSegments = vaultParsedUri.pathSegments.map((s) => Uri.decodeComponent(s)).toList();
 
-    // Find the starting point of the actual user-selected folder in the vault path
-    int vaultRootIndex = -1;
-    for (int i = 0; i < vaultSegments.length; i++) {
-      if (vaultSegments[i].contains(':')) { // e.g., 'primary:My NoteBooks /Programming'
-        vaultRootIndex = i;
+    // Find the common root in the path segments to determine the relative path
+    // This handles variations like 'tree/primary:...' and 'document/primary:...'
+    int commonPrefixEndIndex = 0;
+    for (int i = 0; i < fileSegments.length && i < vaultSegments.length; i++) {
+      if (fileSegments[i] == vaultSegments[i]) {
+        commonPrefixEndIndex = i + 1;
+      } else {
         break;
       }
     }
 
-    if (vaultRootIndex != -1) {
-      // The actual relative path starts after the vault's root segment
-      // For example, if vault is 'tree/primary:My NoteBooks /Programming'
-      // and file is 'document/primary:My NoteBooks /Programming/SubFolder/file.md'
-      // We want 'SubFolder' or 'SubFolder/file.md'
-      
-      // Find the corresponding segment in the file path
-      int fileRootIndex = -1;
-      for (int i = 0; i < fileSegments.length; i++) {
-        if (fileSegments[i] == vaultSegments[vaultRootIndex]) {
-          fileRootIndex = i;
-          break;
-        }
-      }
+    // Extract segments after the common prefix
+    List<String> relativeSegments = fileSegments.sublist(commonPrefixEndIndex);
 
-      if (fileRootIndex != -1) {
-        // Extract segments after the common root
-        List<String> relativeSegments = fileSegments.sublist(fileRootIndex + 1);
-        
-        // Remove the filename from the relative path to get just the directory
-        if (relativeSegments.isNotEmpty) {
-          relativeSegments = relativeSegments.sublist(0, relativeSegments.length - 1);
-        }
-
-        final String directory = relativeSegments.join('/');
-        return directory.isEmpty ? "Root" : directory;
-      }
+    // Remove the filename from the relative path to get just the directory
+    if (relativeSegments.isNotEmpty) {
+      relativeSegments = relativeSegments.sublist(0, relativeSegments.length - 1);
     }
-    return "Unknown Path (Debug)"; // Fallback for debugging
+
+    final String directory = relativeSegments.join('/');
+    return directory.isEmpty ? "Root" : directory;
   }
 }
