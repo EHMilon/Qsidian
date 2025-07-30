@@ -28,7 +28,7 @@ class MyApp
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF6366F1),
+          seedColor: const Color(0xFF8B5CF6), // Purple theme to match app icon
           brightness: Brightness.light,
         ),
         appBarTheme: const AppBarTheme(
@@ -52,6 +52,66 @@ class MyApp
       ),
       debugShowCheckedModeBanner: false,
       home: const MyHomePage(),
+    );
+  }
+}
+
+class _CreateNoteDialog extends StatefulWidget {
+  @override
+  _CreateNoteDialogState createState() => _CreateNoteDialogState();
+}
+
+class _CreateNoteDialogState extends State<_CreateNoteDialog> {
+  final _controller = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Create New Note'),
+      content: Form(
+        key: _formKey,
+        child: TextFormField(
+          controller: _controller,
+          decoration: const InputDecoration(
+            labelText: 'Note name',
+            hintText: 'Enter note name',
+            border: OutlineInputBorder(),
+          ),
+          validator: (value) {
+            if (value == null || value.trim().isEmpty) {
+              return 'Please enter a note name';
+            }
+            return null;
+          },
+          autofocus: true,
+          onFieldSubmitted: (value) {
+            if (_formKey.currentState?.validate() == true) {
+              Navigator.pop(context, value.trim());
+            }
+          },
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () {
+            if (_formKey.currentState?.validate() == true) {
+              Navigator.pop(context, _controller.text.trim());
+            }
+          },
+          child: const Text('Create'),
+        ),
+      ],
     );
   }
 }
@@ -104,6 +164,12 @@ class _MyHomePageState
   // Animation controller for drawer-like behavior
   late AnimationController _animationController;
   late Animation<double> _slideAnimation;
+  
+  // Search functionality
+  bool _isSearching = false;
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+  List<FileItem> _filteredItems = [];
 
   @override
   void initState() {
@@ -168,7 +234,73 @@ class _MyHomePageState
   void dispose() {
     _pageController.dispose();
     _animationController.dispose();
+    _searchController.dispose();
     super.dispose();
+  }
+  
+  void _toggleSearch() {
+    setState(() {
+      _isSearching = !_isSearching;
+      if (!_isSearching) {
+        _searchQuery = '';
+        _searchController.clear();
+        _filteredItems.clear();
+      }
+    });
+  }
+  
+  void _performSearch(String query) {
+    setState(() {
+      _searchQuery = query;
+      if (query.isEmpty) {
+        _filteredItems.clear();
+      } else {
+        _filteredItems = _currentItems.where((item) {
+          return item.name.toLowerCase().contains(query.toLowerCase());
+        }).toList();
+      }
+    });
+  }
+  
+  Future<void> _createNewNote() async {
+    final result = await showDialog<String>(
+      context: context,
+      builder: (context) => _CreateNoteDialog(),
+    );
+    
+    if (result != null && result.isNotEmpty) {
+      try {
+        // Create new note in current folder
+        final String newNoteUri = await platform.invokeMethod(
+          'createNewNote',
+          {
+            'parentFolderUri': _currentFolderUri,
+            'noteName': result,
+          },
+        );
+        
+        if (mounted) {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => NoteEditorScreen(
+                noteFileUri: newNoteUri,
+                parentFolderUri: _currentFolderUri,
+              ),
+            ),
+          );
+        }
+      } on PlatformException catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Failed to create note: ${e.message}'),
+              backgroundColor: Theme.of(context).colorScheme.error,
+            ),
+          );
+        }
+      }
+    }
   }
 
   Future<
@@ -676,13 +808,15 @@ class _MyHomePageState
                     
                     // Action buttons
                     IconButton(
-                      onPressed: () {
-                        // TODO: Add search functionality
-                      },
-                      icon: const Icon(Icons.search_rounded),
+                      onPressed: _toggleSearch,
+                      icon: Icon(_isSearching ? Icons.close_rounded : Icons.search_rounded),
                       style: IconButton.styleFrom(
-                        backgroundColor: colorScheme.surfaceVariant,
-                        foregroundColor: colorScheme.onSurfaceVariant,
+                        backgroundColor: _isSearching 
+                            ? colorScheme.secondaryContainer
+                            : colorScheme.surfaceVariant,
+                        foregroundColor: _isSearching 
+                            ? colorScheme.onSecondaryContainer
+                            : colorScheme.onSurfaceVariant,
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -960,6 +1094,7 @@ class _MyHomePageState
                     MaterialPageRoute(
                       builder: (context) => NoteEditorScreen(
                         noteFileUri: item.uri,
+                        parentFolderUri: _currentFolderUri,
                       ),
                     ),
                   );
