@@ -3,155 +3,118 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#E0E0E0"
+    android:background="@drawable/widget_background"
     android:padding="8dp">
 
-    <!-- Top Bar: Daily Notes / Vault Selector and Action Buttons -->
+    <!-- Header -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:background="#F0F0F0"
-        android:padding="4dp">
+        android:background="@drawable/widget_header_background"
+        android:padding="8dp">
+
+        <ImageView
+            android:layout_width="24dp"
+            android:layout_height="24dp"
+            android:src="@mipmap/ic_launcher"
+            android:layout_marginEnd="8dp" />
 
         <TextView
             android:id="@+id/vault_name_text"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Daily Notes"
+            android:text="Qsidian"
             android:textColor="@android:color/black"
-            android:textSize="18sp"
+            android:textSize="16sp"
             android:textStyle="bold"
-            android:gravity="center_vertical"
-            android:drawableEnd="@android:drawable/arrow_down_float"
-            android:clickable="true"
-            android:focusable="true" />
+            android:singleLine="true"
+            android:ellipsize="end" />
 
         <ImageButton
             android:id="@+id/new_note_button"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
             android:src="@android:drawable/ic_input_add"
             android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="New Note" />
- 
-        <ImageButton
-            android:id="@+id/save_note_button"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:src="@android:drawable/ic_menu_save"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="Save Note" />
- 
-        <ImageButton
-            android:id="@+id/more_options_button"
-            android:layout_width="40dp"
-            android:layout_height="40dp"
-            android:src="@android:drawable/ic_menu_more"
-            android:background="?attr/selectableItemBackgroundBorderless"
-            android:contentDescription="More Options" />
+            android:contentDescription="New Note"
+            android:scaleType="fitCenter" />
 
     </LinearLayout>
 
-    <!-- Main Content Area: Two Panes (Notes List and Editor) -->
+    <!-- Content Area -->
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
         android:orientation="horizontal"
-        android:layout_marginTop="8dp"
-        android:background="#FFFFFF">
+        android:layout_marginTop="4dp">
 
-        <!-- Left Pane: Notes List -->
+        <!-- Files List -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_weight="0.4"
+            android:layout_weight="1"
             android:orientation="vertical"
-            android:padding="8dp"
-            android:background="#F8F8F8">
+            android:background="@drawable/widget_content_background">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Files"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:padding="8dp"
+                android:background="@android:color/darker_gray"
+                android:textColor="@android:color/white" />
 
             <ListView
                 android:id="@+id/notes_list_view"
                 android:layout_width="match_parent"
                 android:layout_height="match_parent"
                 android:divider="@android:color/darker_gray"
-                android:dividerHeight="1dp" />
-
-        </LinearLayout>
-
-        <!-- Right Pane: Markdown Editor with Toolbar and Live Preview (simplified for widget) -->
-        <LinearLayout
-            android:layout_width="0dp"
-            android:layout_height="match_parent"
-            android:layout_weight="0.6"
-            android:orientation="vertical"
-            android:padding="8dp">
-
-            <!-- Formatting Toolbar -->
-            <LinearLayout
-                android:id="@+id/formatting_toolbar"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:orientation="horizontal"
-                android:gravity="center_vertical"
-                android:background="#E0E0E0"
-                android:padding="4dp">
-
-                <ImageButton
-                    android:id="@+id/format_h_button"
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
-                    android:src="@android:drawable/ic_menu_edit"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Format Heading" />
-
-                <ImageButton
-                    android:id="@+id/format_b_button"
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
-                    android:src="@android:drawable/ic_menu_edit"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Format Bold" />
-
-                <ImageButton
-                    android:id="@+id/format_i_button"
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
-                    android:src="@android:drawable/ic_menu_edit"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Format Italic" />
-
-                <ImageButton
-                    android:id="@+id/format_u_button"
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
-                    android:src="@android:drawable/ic_menu_edit"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Format Underline" />
-
-                <ImageButton
-                    android:id="@+id/format_s_button"
-                    android:layout_width="30dp"
-                    android:layout_height="30dp"
-                    android:src="@android:drawable/ic_menu_edit"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:contentDescription="Format Strikethrough" />
-
-            </LinearLayout>
-
-            <EditText
-                android:id="@+id/note_content_edittext"
-                android:layout_width="match_parent"
-                android:layout_height="0dp"
-                android:layout_weight="1"
-                android:hint="Start writing your note..."
-                android:gravity="top|start"
-                android:inputType="textMultiLine"
-                android:background="@null"
+                android:dividerHeight="1dp"
                 android:padding="4dp" />
 
         </LinearLayout>
+
     </LinearLayout>
+
+    <!-- Footer with actions -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:background="@drawable/widget_footer_background"
+        android:padding="4dp"
+        android:layout_marginTop="4dp">
+
+        <ImageButton
+            android:id="@+id/back_button"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@drawable/ic_arrow_back"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Back"
+            android:scaleType="fitCenter" />
+
+        <View
+            android:layout_width="0dp"
+            android:layout_height="1dp"
+            android:layout_weight="1" />
+
+        <ImageButton
+            android:id="@+id/save_note_button"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:src="@android:drawable/ic_menu_save"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Save Note"
+            android:scaleType="fitCenter" />
+
+    </LinearLayout>
+
 </LinearLayout>

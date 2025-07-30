@@ -24,10 +24,9 @@ class MainActivity : FlutterActivity() {
                 val vaultUriString = call.argument<String>("vaultUri")
                 if (vaultUriString != null) {
                     val vaultUri = Uri.parse(vaultUriString)
-                    val fileUris = DocumentFileHelper.listFilesInDirectory(applicationContext, vaultUri)
-                        .filter { it.name?.endsWith(".md", true) == true || it.name?.endsWith(".markdown", true) == true }
-                        .map { it.uri.toString() }
-                    result.success(fileUris)
+                    DocumentFileHelper.listAllMarkdownFilesRecursiveAsync(applicationContext, vaultUri) { fileUris ->
+                        result.success(fileUris.map { it.uri.toString() })
+                    }
                 } else {
                     result.error("INVALID_ARGUMENT", "Vault URI cannot be null", null)
                 }
@@ -35,8 +34,9 @@ class MainActivity : FlutterActivity() {
                 val fileUriString = call.argument<String>("fileUri")
                 if (fileUriString != null) {
                     val fileUri = Uri.parse(fileUriString)
-                    val content = DocumentFileHelper.readFileContent(applicationContext, fileUri)
-                    result.success(content)
+                    DocumentFileHelper.readFileContentAsync(applicationContext, fileUri) { content ->
+                        result.success(content)
+                    }
                 } else {
                     result.error("INVALID_ARGUMENT", "File URI cannot be null", null)
                 }
@@ -45,10 +45,28 @@ class MainActivity : FlutterActivity() {
                 val content = call.argument<String>("content")
                 if (fileUriString != null && content != null) {
                     val fileUri = Uri.parse(fileUriString)
-                    val success = DocumentFileHelper.writeFileContent(applicationContext, fileUri, content)
-                    result.success(success)
+                    DocumentFileHelper.writeFileContentAsync(applicationContext, fileUri, content) { success ->
+                        result.success(success)
+                    }
                 } else {
                     result.error("INVALID_ARGUMENT", "File URI or content cannot be null", null)
+                }
+            } else if (call.method == "listFolderContents") {
+                val folderUriString = call.argument<String>("folderUri")
+                if (folderUriString != null) {
+                    val folderUri = Uri.parse(folderUriString)
+                    DocumentFileHelper.listFolderContentsAsync(applicationContext, folderUri) { contents ->
+                        val contentsList = contents.map { file ->
+                            mapOf(
+                                "uri" to file.uri.toString(),
+                                "name" to (file.name ?: "Unknown"),
+                                "isDirectory" to file.isDirectory
+                            )
+                        }
+                        result.success(contentsList)
+                    }
+                } else {
+                    result.error("INVALID_ARGUMENT", "Folder URI cannot be null", null)
                 }
             } else {
                 result.notImplemented()

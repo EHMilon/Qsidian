@@ -19,30 +19,25 @@ dependencies:
   
   # File System & Storage
   path_provider: ^2.1.4
-  file_picker: ^8.1.2
+  file_picker: ^10.2.0
   shared_preferences: ^2.3.2
   path: ^1.9.0
   watcher: ^1.1.0
-  permission_handler: ^11.3.1
-  saf: ^1.0.3+4 # Added for Storage Access Framework utilities
+  permission_handler: ^12.0.1
   flutter_markdown: ^0.7.3+1
   markdown: ^7.2.2
   
   # Home Screen Widget
-  home_widget: ^0.6.0
+  home_widget: ^0.8.0
   
   # Utilities
-  intl: ^0.19.0
+  intl: ^0.20.2
   uuid: ^4.5.1
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-  flutter_lints: ^5.0.0
+  flutter_lints: ^6.0.0
 
 flutter:
   uses-material-design: true
-  
-  assets:
-    - assets/images/
-    - assets/icons/

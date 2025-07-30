@@ -11,7 +11,6 @@ import es.antonborri.home_widget.HomeWidgetProvider
 import android.content.Intent
 import android.widget.RemoteViewsService
 import android.util.Log
-import org.json.JSONArray
 import android.app.PendingIntent
 import android.content.ComponentName
 import java.text.SimpleDateFormat
@@ -21,197 +20,251 @@ import androidx.documentfile.provider.DocumentFile
 
 class QsidianWidget : HomeWidgetProvider() {
 
+    companion object {
+        private const val TAG = "QsidianWidget"
+        private const val VAULT_PATH_KEY = "vaultPath"
+        private const val CURRENT_FOLDER_URI_KEY = "currentFolderUri"
+        private const val SELECTED_NOTE_FILE_URI_KEY = "selectedNoteFileUri"
+        
+        // Action constants
+        private const val ACTION_ITEM_CLICK = "com.example.qsidian.ITEM_CLICK_ACTION"
+        private const val ACTION_NEW_NOTE = "qsidianwidget://new_note"
+        private const val ACTION_SAVE_NOTE = "qsidianwidget://save_note"
+        private const val ACTION_BACK = "qsidianwidget://back"
+        private const val ACTION_OPEN_APP = "qsidianwidget://open_app"
+    }
+
     override fun onUpdate(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray, widgetData: SharedPreferences) {
+        Log.d(TAG, "onUpdate called for ${appWidgetIds.size} widgets")
+        
         appWidgetIds.forEach { widgetId ->
-            val views = RemoteViews(context.packageName, R.layout.initial_widget_layout).apply {
-                // Set vault name
-                val vaultPath = widgetData.getString("vaultPath", null)
-                setTextViewText(R.id.vault_name_text, getVaultNameFromPath(vaultPath))
-
-                // Set up the ListView for notes
-                val serviceIntent = Intent(context, QsidianWidgetService::class.java)
-                serviceIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
-                serviceIntent.data = Uri.parse(serviceIntent.toUri(Intent.URI_INTENT_SCHEME))
-                setRemoteAdapter(R.id.notes_list_view, serviceIntent)
-
-                // Handle clicks on ListView items (notes)
-                val clickIntent = Intent(context, QsidianWidget::class.java)
-                clickIntent.action = "com.example.qsidian.OPEN_NOTE_ACTION"
-                clickIntent.putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
-                val clickPendingIntent = PendingIntent.getBroadcast(context, 0, clickIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-                setPendingIntentTemplate(R.id.notes_list_view, clickPendingIntent)
-
-                // Read and display selected note content
-                val selectedFileUriString = widgetData.getString("selectedNoteFileUri", null)
-                if (selectedFileUriString != null) {
-                    val selectedFileUri = Uri.parse(selectedFileUriString)
-                    val fileContent = DocumentFileHelper.readFileContent(context, selectedFileUri)
-                    if (fileContent != null) {
-                        setTextViewText(R.id.note_content_edittext, fileContent)
-                    } else {
-                        setTextViewText(R.id.note_content_edittext, "Error loading note.")
-                    }
-                } else {
-                    setTextViewText(R.id.note_content_edittext, "")
-                }
-
-                // Set click listener for the EditText to open the input activity
-                val editNoteIntent = Intent(context, QsidianWidget::class.java).apply {
-                    action = "com.example.qsidian.EDIT_NOTE_CONTENT_ACTION"
-                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
-                    // Pass the current content to the activity
-                    putExtra("currentNoteContent", widgetData.getString("note_content_edittext", ""))
-                }
-                val editNotePendingIntent = PendingIntent.getBroadcast(context, 0, editNoteIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-                setOnClickPendingIntent(R.id.note_content_edittext, editNotePendingIntent)
-
-                // Open App on Vault Name Click (to select a new vault)
-                val openAppIntent = HomeWidgetLaunchIntent.getActivity(context,
-                    MainActivity::class.java)
-                setOnClickPendingIntent(R.id.vault_name_text, openAppIntent)
-
-                // New Note Button
-                val newNoteIntent = HomeWidgetBackgroundIntent.getBroadcast(context,
-                    Uri.parse("qsidianwidget://new_note"))
-                setOnClickPendingIntent(R.id.new_note_button, newNoteIntent)
-
-                // Save Note Button
-                val saveNoteIntent = HomeWidgetBackgroundIntent.getBroadcast(context,
-                    Uri.parse("qsidianwidget://save_note"))
-                setOnClickPendingIntent(R.id.save_note_button, saveNoteIntent)
-
-                // More Options Button (placeholder for now)
-                // val moreOptionsIntent = HomeWidgetBackgroundIntent.getBroadcast(context,
-                //     Uri.parse("qsidianwidget://more_options"))
-                // setOnClickPendingIntent(R.id.more_options_button, moreOptionsIntent)
-
-                // Formatting Toolbar buttons (placeholders for now)
-                val formatHIntent = HomeWidgetBackgroundIntent.getBroadcast(context, Uri.parse("qsidianwidget://format_h"))
-                setOnClickPendingIntent(R.id.format_h_button, formatHIntent)
-                val formatBIntent = HomeWidgetBackgroundIntent.getBroadcast(context, Uri.parse("qsidianwidget://format_b"))
-                setOnClickPendingIntent(R.id.format_b_button, formatBIntent)
-                val formatIIntent = HomeWidgetBackgroundIntent.getBroadcast(context, Uri.parse("qsidianwidget://format_i"))
-                setOnClickPendingIntent(R.id.format_i_button, formatIIntent)
-                val formatUIntent = HomeWidgetBackgroundIntent.getBroadcast(context, Uri.parse("qsidianwidget://format_u"))
-                setOnClickPendingIntent(R.id.format_u_button, formatUIntent)
-                val formatSIntent = HomeWidgetBackgroundIntent.getBroadcast(context, Uri.parse("qsidianwidget://format_s"))
-                setOnClickPendingIntent(R.id.format_s_button, formatSIntent)
-
+            try {
+                updateWidget(context, appWidgetManager, widgetId, widgetData)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error updating widget $widgetId", e)
+                // Show error state
+                showErrorState(context, appWidgetManager, widgetId, "Widget Error")
             }
-            appWidgetManager.updateAppWidget(widgetId, views)
         }
+    }
+
+    private fun updateWidget(context: Context, appWidgetManager: AppWidgetManager, widgetId: Int, widgetData: SharedPreferences) {
+        val views = RemoteViews(context.packageName, R.layout.initial_widget_layout)
+        
+        // Get vault information
+        val vaultPath = widgetData.getString(VAULT_PATH_KEY, null)
+        val currentFolderUri = widgetData.getString(CURRENT_FOLDER_URI_KEY, vaultPath)
+        
+        // Set vault name
+        val vaultName = getVaultNameFromPath(context, currentFolderUri ?: vaultPath)
+        views.setTextViewText(R.id.vault_name_text, vaultName)
+        
+        // Setup file list if vault is available
+        if (vaultPath != null) {
+            setupFileList(context, views, widgetId)
+        } else {
+            showNoVaultState(views)
+        }
+        
+        // Setup click handlers
+        setupClickHandlers(context, views, widgetId)
+        
+        // Update the widget
+        appWidgetManager.updateAppWidget(widgetId, views)
+        Log.d(TAG, "Widget $widgetId updated successfully")
+    }
+
+    private fun setupFileList(context: Context, views: RemoteViews, widgetId: Int) {
+        try {
+            val serviceIntent = Intent(context, QsidianWidgetService::class.java).apply {
+                putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
+                data = Uri.parse(toUri(Intent.URI_INTENT_SCHEME))
+            }
+            views.setRemoteAdapter(R.id.notes_list_view, serviceIntent)
+
+            // Setup click template for list items
+            val clickIntent = Intent(context, QsidianWidget::class.java).apply {
+                action = ACTION_ITEM_CLICK
+                putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
+            }
+            val clickPendingIntent = PendingIntent.getBroadcast(
+                context,
+                widgetId,
+                clickIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            views.setPendingIntentTemplate(R.id.notes_list_view, clickPendingIntent)
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "Error setting up file list", e)
+        }
+    }
+
+    private fun setupClickHandlers(context: Context, views: RemoteViews, widgetId: Int) {
+        // Open app when clicking vault name
+        val openAppIntent = HomeWidgetLaunchIntent.getActivity(context, MainActivity::class.java)
+        views.setOnClickPendingIntent(R.id.vault_name_text, openAppIntent)
+
+        // New note button
+        val newNoteIntent = HomeWidgetBackgroundIntent.getBroadcast(context, Uri.parse(ACTION_NEW_NOTE))
+        views.setOnClickPendingIntent(R.id.new_note_button, newNoteIntent)
+
+        // Save note button
+        val saveNoteIntent = HomeWidgetBackgroundIntent.getBroadcast(context, Uri.parse(ACTION_SAVE_NOTE))
+        views.setOnClickPendingIntent(R.id.save_note_button, saveNoteIntent)
+
+        // Back button
+        val backIntent = HomeWidgetBackgroundIntent.getBroadcast(context, Uri.parse(ACTION_BACK))
+        views.setOnClickPendingIntent(R.id.back_button, backIntent)
+    }
+
+    private fun showNoVaultState(views: RemoteViews) {
+        views.setTextViewText(R.id.vault_name_text, "No Vault Selected")
+        // Could add empty state handling here
+    }
+
+    private fun showErrorState(context: Context, appWidgetManager: AppWidgetManager, widgetId: Int, message: String) {
+        val views = RemoteViews(context.packageName, R.layout.initial_widget_layout)
+        views.setTextViewText(R.id.vault_name_text, message)
+        appWidgetManager.updateAppWidget(widgetId, views)
     }
 
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
-        val appWidgetManager = AppWidgetManager.getInstance(context)
-        val thisAppWidget = ComponentName(context.packageName, QsidianWidget::class.java.name)
-        val appWidgetIds = appWidgetManager.getAppWidgetIds(thisAppWidget)
-        val widgetData = context.getSharedPreferences(context.packageName + "_preferences", Context.MODE_PRIVATE)
+        
+        Log.d(TAG, "onReceive: ${intent.action}")
+        
+        try {
+            val appWidgetManager = AppWidgetManager.getInstance(context)
+            val thisAppWidget = ComponentName(context.packageName, QsidianWidget::class.java.name)
+            val appWidgetIds = appWidgetManager.getAppWidgetIds(thisAppWidget)
+            val widgetData = context.getSharedPreferences("${context.packageName}_preferences", Context.MODE_PRIVATE)
 
-        when (intent.action) {
-            "com.example.qsidian.OPEN_NOTE_ACTION" -> {
-                val fileUriString = intent.getStringExtra("fileUri")
-                if (fileUriString != null) {
-                    with(widgetData.edit()) {
-                        putString("selectedNoteFileUri", fileUriString)
-                        apply()
-                    }
-                    appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.notes_list_view)
+            when (intent.action) {
+                ACTION_ITEM_CLICK -> handleItemClick(context, intent, appWidgetManager, appWidgetIds, widgetData)
+                ACTION_NEW_NOTE -> handleNewNote(context, appWidgetManager, appWidgetIds, widgetData)
+                ACTION_SAVE_NOTE -> handleSaveNote(context, appWidgetManager, appWidgetIds, widgetData)
+                ACTION_BACK -> handleBack(context, appWidgetManager, appWidgetIds, widgetData)
+                "android.appwidget.action.APPWIDGET_UPDATE" -> {
                     onUpdate(context, appWidgetManager, appWidgetIds, widgetData)
                 }
+                else -> Log.d(TAG, "Unhandled action: ${intent.action}")
             }
-            "android.appwidget.action.APPWIDGET_UPDATE" -> {
-                // Widget updated by system or HomeWidget.updateWidget
-                onUpdate(context, appWidgetManager, appWidgetIds, widgetData)
-            }
-            "qsidianwidget://new_note" -> {
-                // Clear selected note and content for a new note
+        } catch (e: Exception) {
+            Log.e(TAG, "Error in onReceive", e)
+        }
+    }
+
+    private fun handleItemClick(context: Context, intent: Intent, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray, widgetData: SharedPreferences) {
+        val itemUriString = intent.getStringExtra("itemUri")
+        val isDirectory = intent.getBooleanExtra("isDirectory", false)
+        
+        if (itemUriString != null) {
+            if (isDirectory) {
+                // Navigate into folder
                 with(widgetData.edit()) {
-                    remove("selectedNoteFileUri")
+                    putString(CURRENT_FOLDER_URI_KEY, itemUriString)
+                    remove(SELECTED_NOTE_FILE_URI_KEY)
                     apply()
                 }
-                onUpdate(context, appWidgetManager, appWidgetIds, widgetData)
-            }
-            "qsidianwidget://save_note" -> {
-                val currentNoteContent = widgetData.getString("note_content_edittext", "") ?: ""
-                val selectedNoteFileUriString = widgetData.getString("selectedNoteFileUri", null)
-                val vaultUriString = widgetData.getString("vaultPath", null)
-
-                if (vaultUriString == null) {
-                    Log.e("QsidianWidget", "Cannot save note: No vault selected.")
-                    return
+                refreshWidget(context, appWidgetManager, appWidgetIds, widgetData)
+            } else {
+                // Open note in main app
+                val openNoteIntent = Intent(context, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                    putExtra("openNote", itemUriString)
                 }
-
-                val vaultUri = Uri.parse(vaultUriString)
-                val targetFileUri: Uri?
-
-                if (selectedNoteFileUriString != null) {
-                    // Edit existing note
-                    targetFileUri = Uri.parse(selectedNoteFileUriString)
-                    DocumentFileHelper.writeFileContent(context, targetFileUri, currentNoteContent)
-                    Log.d("QsidianWidget", "Note updated: $targetFileUri")
-                } else {
-                    // Create new note
-                    val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-                    val fileName = "quick_note_$timestamp.md"
-                    val createdFile = DocumentFileHelper.createFile(context, vaultUri, "text/markdown", fileName)
-                    if (createdFile != null) {
-                        DocumentFileHelper.writeFileContent(context, createdFile.uri, currentNoteContent)
-                        targetFileUri = createdFile.uri
-                        Log.d("QsidianWidget", "New note created and saved: $targetFileUri")
-                        with(widgetData.edit()) {
-                            putString("selectedNoteFileUri", targetFileUri.toString())
-                            apply()
-                        }
-                    } else {
-                        Log.e("QsidianWidget", "Failed to create new file in vault: $vaultUri")
-                        targetFileUri = null
-                    }
-                }
-
-                if (targetFileUri != null) {
-                    onUpdate(context, appWidgetManager, appWidgetIds, widgetData)
-                }
-            }
-            "com.example.qsidian.EDIT_NOTE_CONTENT_ACTION" -> {
-                val currentContent = intent.getStringExtra("currentNoteContent") ?: ""
-                val appWidgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
-
-                val editIntent = Intent(context, WidgetInputActivity::class.java).apply {
-                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    putExtra(WidgetInputActivity.EXTRA_INITIAL_TEXT, currentContent)
-                    putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, appWidgetId) // Pass widget ID
-                }
-                context.startActivity(editIntent)
-            }
-            "com.example.qsidian.NOTE_CONTENT_UPDATED_ACTION" -> {
-                val updatedContent = intent.getStringExtra(WidgetInputActivity.EXTRA_RESULT_TEXT) ?: ""
-                val appWidgetId = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
-
-                // Save the updated content to SharedPreferences
-                with(widgetData.edit()) {
-                    putString("note_content_edittext", updatedContent)
-                    apply()
-                }
-
-                // Trigger widget update to display the new content
-                val ids = appWidgetManager.getAppWidgetIds(thisAppWidget)
-                onUpdate(context, appWidgetManager, ids, widgetData)
-            }
-            // Handle other formatting actions here
-            else -> {
-                Log.d("QsidianWidget", "Unhandled intent action: ${intent.action}")
+                context.startActivity(openNoteIntent)
             }
         }
     }
 
-    private fun getVaultNameFromPath(path: String?): String {
+    private fun handleNewNote(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray, widgetData: SharedPreferences) {
+        val vaultUriString = widgetData.getString(VAULT_PATH_KEY, null)
+        val currentFolderUriString = widgetData.getString(CURRENT_FOLDER_URI_KEY, vaultUriString)
+        
+        if (currentFolderUriString != null) {
+            try {
+                val currentFolderUri = Uri.parse(currentFolderUriString)
+                val timestamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
+                val fileName = "quick_note_$timestamp.md"
+                
+                val createdFile = DocumentFileHelper.createFile(context, currentFolderUri, "text/markdown", fileName)
+                if (createdFile != null) {
+                    val initialContent = "# Quick Note\n\nCreated: ${SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()).format(Date())}\n\n"
+                    DocumentFileHelper.writeFileContentAsync(context, createdFile.uri, initialContent) { success ->
+                        if (success) {
+                            // Open the new note in the main app
+                            val openNoteIntent = Intent(context, MainActivity::class.java).apply {
+                                flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                                putExtra("openNote", createdFile.uri.toString())
+                            }
+                            context.startActivity(openNoteIntent)
+                            
+                            refreshWidget(context, appWidgetManager, appWidgetIds, widgetData)
+                            Log.d(TAG, "New note created: $fileName")
+                        } else {
+                            Log.e(TAG, "Failed to write initial content to new note")
+                        }
+                    }
+                } else {
+                    Log.e(TAG, "Failed to create new note")
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Error creating new note", e)
+            }
+        }
+    }
+
+    private fun handleSaveNote(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray, widgetData: SharedPreferences) {
+        // This could be used for quick save functionality
+        Log.d(TAG, "Save note action triggered")
+    }
+
+    private fun handleBack(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray, widgetData: SharedPreferences) {
+        val vaultUriString = widgetData.getString(VAULT_PATH_KEY, null)
+        val currentFolderUriString = widgetData.getString(CURRENT_FOLDER_URI_KEY, vaultUriString)
+        
+        if (currentFolderUriString != null && vaultUriString != null) {
+            val currentFolderUri = Uri.parse(currentFolderUriString)
+            val vaultUri = Uri.parse(vaultUriString)
+            
+            if (currentFolderUri != vaultUri) {
+                try {
+                    val parentFile = DocumentFile.fromTreeUri(context, currentFolderUri)?.parentFile
+                    if (parentFile != null) {
+                        with(widgetData.edit()) {
+                            putString(CURRENT_FOLDER_URI_KEY, parentFile.uri.toString())
+                            remove(SELECTED_NOTE_FILE_URI_KEY)
+                            apply()
+                        }
+                        refreshWidget(context, appWidgetManager, appWidgetIds, widgetData)
+                        Log.d(TAG, "Navigated back to parent folder")
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error navigating back", e)
+                }
+            }
+        }
+    }
+
+    private fun refreshWidget(context: Context, appWidgetManager: AppWidgetManager, appWidgetIds: IntArray, widgetData: SharedPreferences) {
+        appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.notes_list_view)
+        onUpdate(context, appWidgetManager, appWidgetIds, widgetData)
+    }
+
+    private fun getVaultNameFromPath(context: Context, path: String?): String {
         return if (path.isNullOrEmpty()) {
             "No Vault Selected"
         } else {
-            val uri = Uri.parse(path)
-            uri.lastPathSegment ?: "Selected Vault"
+            try {
+                val uri = Uri.parse(path)
+                val documentFile = DocumentFile.fromTreeUri(context, uri)
+                documentFile?.name ?: "Selected Vault"
+            } catch (e: Exception) {
+                Log.e(TAG, "Error getting vault name from path: $path", e)
+                "Error"
+            }
         }
     }
 }
@@ -223,64 +276,92 @@ class QsidianWidgetService : RemoteViewsService() {
 }
 
 class QsidianWidgetFactory(private val context: Context, intent: Intent) : RemoteViewsService.RemoteViewsFactory {
+    
+    companion object {
+        private const val TAG = "QsidianWidgetFactory"
+        private const val VAULT_PATH_KEY = "vaultPath"
+        private const val CURRENT_FOLDER_URI_KEY = "currentFolderUri"
+    }
+    
     private var appWidgetId: Int = intent.getIntExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, AppWidgetManager.INVALID_APPWIDGET_ID)
-    private var markdownFileUris: List<Uri> = emptyList()
+    private var folderContents: List<DocumentFile> = emptyList()
 
     override fun onCreate() {
-        // In onCreate() you setup any data you need.
+        Log.d(TAG, "onCreate")
     }
 
     override fun onDataSetChanged() {
-        val widgetData = context.getSharedPreferences(context.packageName + "_preferences", Context.MODE_PRIVATE)
-        val vaultUriString = widgetData.getString("vaultPath", null)
+        Log.d(TAG, "onDataSetChanged")
+        
+        try {
+            val widgetData = context.getSharedPreferences("${context.packageName}_preferences", Context.MODE_PRIVATE)
+            val vaultUriString = widgetData.getString(VAULT_PATH_KEY, null)
+            val currentFolderUriString = widgetData.getString(CURRENT_FOLDER_URI_KEY, vaultUriString)
 
-        if (vaultUriString != null) {
-            val vaultUri = Uri.parse(vaultUriString)
-            val files = DocumentFileHelper.listFilesInDirectory(context, vaultUri)
-            markdownFileUris = files.filter { it.name?.endsWith(".md", true) == true || it.name?.endsWith(".markdown", true) == true }.map { it.uri }
-            Log.d("QsidianWidgetFactory", "Data set changed. Vault: $vaultUriString, Files found: ${markdownFileUris.size}")
-        } else {
-            markdownFileUris = emptyList()
-            Log.d("QsidianWidgetFactory", "Data set changed. No vault selected.")
+            if (currentFolderUriString != null) {
+                val currentFolderUri = Uri.parse(currentFolderUriString)
+                DocumentFileHelper.listFolderContentsAsync(context, currentFolderUri) { contents ->
+                    folderContents = contents.filter { it.name != null } // Filter out items with null names
+                    Log.d(TAG, "Loaded ${folderContents.size} items from folder")
+                    // Notify widget manager that data set has changed after async operation
+                    val appWidgetManager = AppWidgetManager.getInstance(context)
+                    val thisAppWidget = ComponentName(context, QsidianWidget::class.java)
+                    val appWidgetIds = appWidgetManager.getAppWidgetIds(thisAppWidget)
+                    appWidgetManager.notifyAppWidgetViewDataChanged(appWidgetIds, R.id.notes_list_view)
+                }
+            } else {
+                folderContents = emptyList()
+                Log.d(TAG, "No folder selected")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error loading folder contents", e)
+            folderContents = emptyList()
         }
     }
 
     override fun onDestroy() {
-        // In onDestroy() you clean up anything that was set up in onCreate().
+        Log.d(TAG, "onDestroy")
     }
 
-    override fun getCount(): Int {
-        return markdownFileUris.size
-    }
+    override fun getCount(): Int = folderContents.size
 
     override fun getViewAt(position: Int): RemoteViews {
-        val views = RemoteViews(context.packageName, R.layout.widget_list_item).apply {
-            val fileUri = markdownFileUris[position]
-            val fileName = DocumentFileHelper.getDocumentFileFromUri(context, fileUri)?.name ?: fileUri.lastPathSegment ?: "Unknown File"
-            setTextViewText(R.id.widget_list_item_text, fileName)
-
-            val fillInIntent = Intent()
-            fillInIntent.putExtra("fileUri", fileUri.toString())
-            setOnClickFillInIntent(R.id.widget_list_item_text, fillInIntent)
+        if (position >= folderContents.size) {
+            return getLoadingView() ?: RemoteViews(context.packageName, R.layout.widget_list_item)
         }
+        
+        val item = folderContents[position]
+        val itemName = item.name ?: "Unknown Item"
+        
+        val views = RemoteViews(context.packageName, R.layout.widget_list_item)
+        views.setTextViewText(R.id.widget_list_item_text, itemName)
+
+        // Set icon based on type
+        if (item.isDirectory) {
+            views.setImageViewResource(R.id.item_icon, R.drawable.ic_folder)
+        } else {
+            views.setImageViewResource(R.id.item_icon, R.drawable.ic_note)
+        }
+
+        // Set click intent
+        val fillInIntent = Intent().apply {
+            putExtra("itemUri", item.uri.toString())
+            putExtra("isDirectory", item.isDirectory)
+        }
+        views.setOnClickFillInIntent(R.id.widget_list_item_text, fillInIntent)
+        
         return views
     }
 
     override fun getLoadingView(): RemoteViews? {
-        return null // You can return a loading view here
+        val views = RemoteViews(context.packageName, R.layout.widget_list_item)
+        views.setTextViewText(R.id.widget_list_item_text, "Loading...")
+        return views
     }
 
-    override fun getViewTypeCount(): Int {
-        return 1
-    }
+    override fun getViewTypeCount(): Int = 1
 
-    override fun getItemId(position: Int): Long {
-        return position.toLong()
-    }
+    override fun getItemId(position: Int): Long = position.toLong()
 
-    override fun hasStableIds(): Boolean {
-        return true
-    }
-
-    // Removed parseJsonArray as it's no longer needed for file paths
+    override fun hasStableIds(): Boolean = true
 }
