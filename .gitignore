@@ -48,3 +48,4 @@ app.*.map.json
 .idea
 .qodo
 .kilocode
+.kiro/

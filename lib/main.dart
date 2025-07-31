@@ -7,19 +7,12 @@ import 'package:home_widget/home_widget.dart';
 import 'package:qsidian/note_editor_screen.dart';
 import 'package:flutter/services.dart'; // Import for MethodChannel
 
-void
-main() {
-  runApp(
-    const MyApp(),
-  );
+void main() {
+  runApp(const MyApp());
 }
 
-class MyApp
-    extends
-        StatelessWidget {
-  const MyApp({
-    super.key,
-  });
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -40,10 +33,7 @@ class MyApp
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
-            side: BorderSide(
-              color: Colors.grey.shade200,
-              width: 1,
-            ),
+            side: BorderSide(color: Colors.grey.shade200, width: 1),
           ),
         ),
         listTileTheme: const ListTileThemeData(
@@ -116,18 +106,11 @@ class _CreateNoteDialogState extends State<_CreateNoteDialog> {
   }
 }
 
-class MyHomePage
-    extends
-        StatefulWidget {
-  const MyHomePage({
-    super.key,
-  });
+class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key});
 
   @override
-  State<
-    MyHomePage
-  >
-  createState() => _MyHomePageState();
+  State<MyHomePage> createState() => _MyHomePageState();
 }
 
 class FileItem {
@@ -144,27 +127,21 @@ class FileItem {
   });
 }
 
-class _MyHomePageState
-    extends
-        State<
-          MyHomePage
-        > with TickerProviderStateMixin {
+class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
   String? _vaultUri; // Changed to _vaultUri to store the content URI
   String? _currentFolderUri; // Current folder being viewed
   List<FileItem> _currentItems = []; // Current folder contents
   List<String> _navigationStack = []; // For back navigation
-  static const platform = MethodChannel(
-    'com.example.qsidian/vault',
-  );
-  
+  static const platform = MethodChannel('com.example.qsidian/vault');
+
   // Page controller for swipe navigation
   late PageController _pageController;
   int _currentPageIndex = 1; // Start with the main content (middle page)
-  
+
   // Animation controller for drawer-like behavior
   late AnimationController _animationController;
   late Animation<double> _slideAnimation;
-  
+
   // Search functionality
   bool _isSearching = false;
   String _searchQuery = '';
@@ -176,58 +153,41 @@ class _MyHomePageState
     super.initState();
     _requestPermissions();
     _loadVaultPath();
-    
+
     // Initialize page controller
     _pageController = PageController(initialPage: 1);
-    
+
     // Initialize animation controller
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    
-    _slideAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+
+    _slideAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
 
     // Set up MethodChannel to receive vault URI from Android
-    platform.setMethodCallHandler(
-      (
-        call,
-      ) async {
-        print("DEBUG: MethodChannel call received: ${call.method}");
-        if (call.method ==
-            "vaultSelected") {
-          final String? vaultUriString =
-              call.arguments
-                  as String?;
-          print("DEBUG: Vault URI received: $vaultUriString");
-          if (vaultUriString !=
-              null) {
-            final prefs = await SharedPreferences.getInstance();
-            await prefs.setString(
-              'vaultUri',
-              vaultUriString,
-            );
-            print("DEBUG: Vault URI saved to preferences");
-            setState(
-              () {
-                _vaultUri = vaultUriString;
-                _currentFolderUri = vaultUriString;
-                _navigationStack.clear();
-              },
-            );
-            print("DEBUG: State updated, calling _loadCurrentFolder");
-            await _loadCurrentFolder();
-            await _sendDataToWidget();
-          }
+    platform.setMethodCallHandler((call) async {
+      print("DEBUG: MethodChannel call received: ${call.method}");
+      if (call.method == "vaultSelected") {
+        final String? vaultUriString = call.arguments as String?;
+        print("DEBUG: Vault URI received: $vaultUriString");
+        if (vaultUriString != null) {
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('vaultUri', vaultUriString);
+          print("DEBUG: Vault URI saved to preferences");
+          setState(() {
+            _vaultUri = vaultUriString;
+            _currentFolderUri = vaultUriString;
+            _navigationStack.clear();
+          });
+          print("DEBUG: State updated, calling _loadCurrentFolder");
+          await _loadCurrentFolder();
+          await _sendDataToWidget();
         }
-      },
-    );
+      }
+    });
   }
 
   @override
@@ -237,7 +197,7 @@ class _MyHomePageState
     _searchController.dispose();
     super.dispose();
   }
-  
+
   void _toggleSearch() {
     setState(() {
       _isSearching = !_isSearching;
@@ -248,7 +208,7 @@ class _MyHomePageState
       }
     });
   }
-  
+
   void _performSearch(String query) {
     setState(() {
       _searchQuery = query;
@@ -261,24 +221,21 @@ class _MyHomePageState
       }
     });
   }
-  
+
   Future<void> _createNewNote() async {
     final result = await showDialog<String>(
       context: context,
       builder: (context) => _CreateNoteDialog(),
     );
-    
+
     if (result != null && result.isNotEmpty) {
       try {
         // Create new note in current folder
-        final String newNoteUri = await platform.invokeMethod(
-          'createNewNote',
-          {
-            'parentFolderUri': _currentFolderUri,
-            'noteName': result,
-          },
-        );
-        
+        final String newNoteUri = await platform.invokeMethod('createNewNote', {
+          'parentFolderUri': _currentFolderUri,
+          'noteName': result,
+        });
+
         if (mounted) {
           Navigator.push(
             context,
@@ -303,27 +260,16 @@ class _MyHomePageState
     }
   }
 
-  Future<
-    void
-  >
-  _requestPermissions() async {
+  Future<void> _requestPermissions() async {
     await Permission.storage.request();
   }
 
-  Future<
-    void
-  >
-  _loadVaultPath() async {
+  Future<void> _loadVaultPath() async {
     final prefs = await SharedPreferences.getInstance();
-    setState(
-      () {
-        _vaultUri = prefs.getString(
-          'vaultUri',
-        ); // Changed to vaultUri
-      },
-    );
-    if (_vaultUri !=
-        null) {
+    setState(() {
+      _vaultUri = prefs.getString('vaultUri'); // Changed to vaultUri
+    });
+    if (_vaultUri != null) {
       _currentFolderUri = _vaultUri;
       _loadCurrentFolder();
     }
@@ -338,27 +284,20 @@ class _MyHomePageState
     }
   }
 
-  Future<
-    void
-  >
-  _selectVaultFolder() async {
+  Future<void> _selectVaultFolder() async {
     try {
-      await platform.invokeMethod(
-        'openDirectoryPicker',
-      );
+      await platform.invokeMethod('openDirectoryPicker');
       // The result will be handled by the MethodChannel listener in initState
-    } on PlatformException catch (
-      e
-    ) {
-      print(
-        "Failed to open directory picker: '${e.message}'.",
-      );
+    } on PlatformException catch (e) {
+      print("Failed to open directory picker: '${e.message}'.");
     }
   }
 
   Future<void> _loadCurrentFolder() async {
-    print("DEBUG: _loadCurrentFolder called with _currentFolderUri: $_currentFolderUri");
-    
+    print(
+      "DEBUG: _loadCurrentFolder called with _currentFolderUri: $_currentFolderUri",
+    );
+
     if (_currentFolderUri == null) {
       print("DEBUG: _currentFolderUri is null, setting empty items");
       setState(() {
@@ -368,7 +307,9 @@ class _MyHomePageState
     }
 
     try {
-      print("DEBUG: Calling platform method listFolderContents with URI: $_currentFolderUri");
+      print(
+        "DEBUG: Calling platform method listFolderContents with URI: $_currentFolderUri",
+      );
       final List<dynamic>? folderContents = await platform.invokeMethod(
         'listFolderContents',
         {'folderUri': _currentFolderUri},
@@ -378,28 +319,32 @@ class _MyHomePageState
 
       if (folderContents != null) {
         List<FileItem> items = [];
-        
+
         print("DEBUG: Processing ${folderContents.length} items");
         for (var item in folderContents) {
           final Map<String, dynamic> itemMap = Map<String, dynamic>.from(item);
           final String uri = itemMap['uri'] ?? '';
           final String name = itemMap['name'] ?? '';
           final bool isDirectory = itemMap['isDirectory'] ?? false;
-          
-          print("DEBUG: Processing item - name: $name, isDirectory: $isDirectory, uri: $uri");
-          
+
+          print(
+            "DEBUG: Processing item - name: $name, isDirectory: $isDirectory, uri: $uri",
+          );
+
           // Skip hidden files and folders (starting with .)
           if (name.startsWith('.')) {
             print("DEBUG: Skipping hidden item: $name");
             continue;
           }
-          
-          items.add(FileItem(
-            uri: uri,
-            name: name,
-            isDirectory: isDirectory,
-            displayPath: _getDisplayPath(uri),
-          ));
+
+          items.add(
+            FileItem(
+              uri: uri,
+              name: name,
+              isDirectory: isDirectory,
+              displayPath: _getDisplayPath(uri),
+            ),
+          );
         }
 
         print("DEBUG: After filtering, we have ${items.length} items");
@@ -456,7 +401,7 @@ class _MyHomePageState
   String _getDisplayPath(String uri) {
     try {
       if (_vaultUri == null) return "";
-      
+
       // Simple approach: just extract the filename
       final int lastSlashIndex = uri.lastIndexOf('/');
       if (lastSlashIndex != -1 && lastSlashIndex < uri.length - 1) {
@@ -476,7 +421,7 @@ class _MyHomePageState
   String _getCurrentFolderName() {
     if (_currentFolderUri == null || _vaultUri == null) return "Vault";
     if (_currentFolderUri == _vaultUri) return "Vault Root";
-    
+
     try {
       final Uri uri = Uri.parse(_currentFolderUri!);
       if (uri.pathSegments.isNotEmpty) {
@@ -492,17 +437,19 @@ class _MyHomePageState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return Scaffold(
       backgroundColor: colorScheme.surface,
-      body: _vaultUri == null ? _buildWelcomeScreen(context) : _buildMainContent(context),
+      body: _vaultUri == null
+          ? _buildWelcomeScreen(context)
+          : _buildMainContent(context),
     );
   }
 
   Widget _buildWelcomeScreen(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(24.0),
@@ -535,7 +482,7 @@ class _MyHomePageState
               ),
             ),
             const SizedBox(height: 32),
-            
+
             Text(
               'Welcome to Qsidian',
               style: theme.textTheme.headlineMedium?.copyWith(
@@ -544,7 +491,7 @@ class _MyHomePageState
               ),
             ),
             const SizedBox(height: 16),
-            
+
             Text(
               'Your modern markdown note-taking companion.\nSelect your vault to get started.',
               textAlign: TextAlign.center,
@@ -554,21 +501,24 @@ class _MyHomePageState
               ),
             ),
             const SizedBox(height: 48),
-            
+
             // Select Vault Button
             FilledButton.icon(
               onPressed: _selectVaultFolder,
               icon: const Icon(Icons.folder_open_rounded),
               label: const Text('Select Vault Folder'),
               style: FilledButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 32,
+                  vertical: 16,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
               ),
             ),
             const SizedBox(height: 24),
-            
+
             // Features
             Card(
               child: Padding(
@@ -605,7 +555,12 @@ class _MyHomePageState
     );
   }
 
-  Widget _buildFeatureItem(IconData icon, String title, String description, ColorScheme colorScheme) {
+  Widget _buildFeatureItem(
+    IconData icon,
+    String title,
+    String description,
+    ColorScheme colorScheme,
+  ) {
     return Row(
       children: [
         Container(
@@ -615,11 +570,7 @@ class _MyHomePageState
             color: colorScheme.primaryContainer,
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(
-            icon,
-            color: colorScheme.onPrimaryContainer,
-            size: 24,
-          ),
+          child: Icon(icon, color: colorScheme.onPrimaryContainer, size: 24),
         ),
         const SizedBox(width: 16),
         Expanded(
@@ -658,10 +609,10 @@ class _MyHomePageState
       children: [
         // Left Panel - File Browser
         _buildFileBrowserPanel(context),
-        
+
         // Center Panel - Main Content
         _buildCenterPanel(context),
-        
+
         // Right Panel - Empty for now
         _buildRightPanel(context),
       ],
@@ -671,7 +622,7 @@ class _MyHomePageState
   Widget _buildFileBrowserPanel(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return Container(
       color: colorScheme.surfaceVariant.withOpacity(0.3),
       child: Column(
@@ -681,16 +632,16 @@ class _MyHomePageState
             decoration: BoxDecoration(
               color: colorScheme.surface,
               border: Border(
-                bottom: BorderSide(
-                  color: colorScheme.outlineVariant,
-                  width: 1,
-                ),
+                bottom: BorderSide(color: colorScheme.outlineVariant, width: 1),
               ),
             ),
             child: SafeArea(
               bottom: false,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 child: Row(
                   children: [
                     if (_navigationStack.isNotEmpty)
@@ -703,7 +654,7 @@ class _MyHomePageState
                         ),
                       ),
                     if (_navigationStack.isNotEmpty) const SizedBox(width: 12),
-                    
+
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -718,7 +669,7 @@ class _MyHomePageState
                         ],
                       ),
                     ),
-                    
+
                     IconButton(
                       onPressed: _selectVaultFolder,
                       icon: const Icon(Icons.folder_open_rounded),
@@ -732,7 +683,7 @@ class _MyHomePageState
               ),
             ),
           ),
-          
+
           // File List
           Expanded(
             child: _currentItems.isEmpty
@@ -747,7 +698,7 @@ class _MyHomePageState
   Widget _buildCenterPanel(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return Container(
       color: colorScheme.surface,
       child: Column(
@@ -757,16 +708,16 @@ class _MyHomePageState
             decoration: BoxDecoration(
               color: colorScheme.surface,
               border: Border(
-                bottom: BorderSide(
-                  color: colorScheme.outlineVariant,
-                  width: 1,
-                ),
+                bottom: BorderSide(color: colorScheme.outlineVariant, width: 1),
               ),
             ),
             child: SafeArea(
               bottom: false,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 child: Row(
                   children: [
                     // Menu button to show file browser
@@ -785,7 +736,7 @@ class _MyHomePageState
                       ),
                     ),
                     const SizedBox(width: 12),
-                    
+
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -805,16 +756,20 @@ class _MyHomePageState
                         ],
                       ),
                     ),
-                    
+
                     // Action buttons
                     IconButton(
                       onPressed: _toggleSearch,
-                      icon: Icon(_isSearching ? Icons.close_rounded : Icons.search_rounded),
+                      icon: Icon(
+                        _isSearching
+                            ? Icons.close_rounded
+                            : Icons.search_rounded,
+                      ),
                       style: IconButton.styleFrom(
-                        backgroundColor: _isSearching 
+                        backgroundColor: _isSearching
                             ? colorScheme.secondaryContainer
                             : colorScheme.surfaceVariant,
-                        foregroundColor: _isSearching 
+                        foregroundColor: _isSearching
                             ? colorScheme.onSecondaryContainer
                             : colorScheme.onSurfaceVariant,
                       ),
@@ -839,7 +794,7 @@ class _MyHomePageState
               ),
             ),
           ),
-          
+
           // Main Content
           Expanded(
             child: Center(
@@ -873,7 +828,7 @@ class _MyHomePageState
                       ),
                     ),
                     const SizedBox(height: 32),
-                    
+
                     Text(
                       'Welcome to Qsidian',
                       style: theme.textTheme.headlineMedium?.copyWith(
@@ -882,7 +837,7 @@ class _MyHomePageState
                       ),
                     ),
                     const SizedBox(height: 16),
-                    
+
                     Text(
                       'Swipe left to browse files\nSwipe right for more options',
                       textAlign: TextAlign.center,
@@ -892,7 +847,7 @@ class _MyHomePageState
                       ),
                     ),
                     const SizedBox(height: 32),
-                    
+
                     // Quick actions
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -929,7 +884,7 @@ class _MyHomePageState
   Widget _buildRightPanel(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return Container(
       color: colorScheme.surfaceVariant.withOpacity(0.3),
       child: Column(
@@ -939,16 +894,16 @@ class _MyHomePageState
             decoration: BoxDecoration(
               color: colorScheme.surface,
               border: Border(
-                bottom: BorderSide(
-                  color: colorScheme.outlineVariant,
-                  width: 1,
-                ),
+                bottom: BorderSide(color: colorScheme.outlineVariant, width: 1),
               ),
             ),
             child: SafeArea(
               bottom: false,
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 child: Row(
                   children: [
                     Expanded(
@@ -978,7 +933,7 @@ class _MyHomePageState
               ),
             ),
           ),
-          
+
           // Right Panel Content
           Expanded(
             child: Center(
@@ -1028,7 +983,7 @@ class _MyHomePageState
   Widget _buildEmptyState(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(32),
@@ -1072,14 +1027,15 @@ class _MyHomePageState
   Widget _buildFileList(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: _currentItems.length,
       itemBuilder: (context, index) {
         final item = _currentItems[index];
-        final isMarkdown = item.name.endsWith('.md') || item.name.endsWith('.markdown');
-        
+        final isMarkdown =
+            item.name.endsWith('.md') || item.name.endsWith('.markdown');
+
         return Container(
           margin: const EdgeInsets.only(bottom: 8),
           child: Material(
@@ -1117,29 +1073,29 @@ class _MyHomePageState
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: item.isDirectory 
+                        color: item.isDirectory
                             ? colorScheme.primaryContainer
-                            : isMarkdown 
-                                ? colorScheme.secondaryContainer
-                                : colorScheme.surfaceVariant,
+                            : isMarkdown
+                            ? colorScheme.secondaryContainer
+                            : colorScheme.surfaceVariant,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Icon(
-                        item.isDirectory 
+                        item.isDirectory
                             ? Icons.folder_rounded
-                            : isMarkdown 
-                                ? Icons.description_rounded
-                                : Icons.insert_drive_file_rounded,
-                        color: item.isDirectory 
+                            : isMarkdown
+                            ? Icons.description_rounded
+                            : Icons.insert_drive_file_rounded,
+                        color: item.isDirectory
                             ? colorScheme.onPrimaryContainer
-                            : isMarkdown 
-                                ? colorScheme.onSecondaryContainer
-                                : colorScheme.onSurfaceVariant,
+                            : isMarkdown
+                            ? colorScheme.onSecondaryContainer
+                            : colorScheme.onSurfaceVariant,
                         size: 24,
                       ),
                     ),
                     const SizedBox(width: 16),
-                    
+
                     // Content
                     Expanded(
                       child: Column(
@@ -1167,7 +1123,7 @@ class _MyHomePageState
                         ],
                       ),
                     ),
-                    
+
                     // Arrow for folders
                     if (item.isDirectory)
                       Icon(
@@ -1219,7 +1175,10 @@ class _MyHomePageState
       // 'tree/primary:My%20NoteBooks%20/Programming'
       // We want to extract 'Programming'
       String path = Uri.decodeComponent(uri.path);
-      List<String> segments = path.split('/').where((s) => s.isNotEmpty).toList();
+      List<String> segments = path
+          .split('/')
+          .where((s) => s.isNotEmpty)
+          .toList();
 
       // Find the segment that contains the actual folder name (e.g., after 'primary:')
       for (String segment in segments) {
@@ -1242,13 +1201,21 @@ class _MyHomePageState
       final Uri vaultParsedUri = Uri.parse(vaultUriString);
 
       // Get the path segments, decoding them
-      List<String> fileSegments = fileParsedUri.pathSegments.map((s) => Uri.decodeComponent(s)).toList();
-      List<String> vaultSegments = vaultParsedUri.pathSegments.map((s) => Uri.decodeComponent(s)).toList();
+      List<String> fileSegments = fileParsedUri.pathSegments
+          .map((s) => Uri.decodeComponent(s))
+          .toList();
+      List<String> vaultSegments = vaultParsedUri.pathSegments
+          .map((s) => Uri.decodeComponent(s))
+          .toList();
 
       // Find the common root in the path segments to determine the relative path
       // This handles variations like 'tree/primary:...' and 'document/primary:...'
       int commonPrefixEndIndex = 0;
-      for (int i = 0; i < fileSegments.length && i < vaultSegments.length; i++) {
+      for (
+        int i = 0;
+        i < fileSegments.length && i < vaultSegments.length;
+        i++
+      ) {
         if (fileSegments[i] == vaultSegments[i]) {
           commonPrefixEndIndex = i + 1;
         } else {
@@ -1257,11 +1224,16 @@ class _MyHomePageState
       }
 
       // Extract segments after the common prefix
-      List<String> relativeSegments = fileSegments.sublist(commonPrefixEndIndex);
+      List<String> relativeSegments = fileSegments.sublist(
+        commonPrefixEndIndex,
+      );
 
       // Remove the filename from the relative path to get just the directory
       if (relativeSegments.isNotEmpty) {
-        relativeSegments = relativeSegments.sublist(0, relativeSegments.length - 1);
+        relativeSegments = relativeSegments.sublist(
+          0,
+          relativeSegments.length - 1,
+        );
       }
 
       final String directory = relativeSegments.join('/');
@@ -1275,7 +1247,7 @@ class _MyHomePageState
   Widget _buildBreadcrumb(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    
+
     if (_currentFolderUri == null || _vaultUri == null) {
       return Text(
         "Vault",
@@ -1296,10 +1268,10 @@ class _MyHomePageState
 
     // Build breadcrumb from navigation stack
     List<String> breadcrumbParts = [];
-    
+
     // Add root
     breadcrumbParts.add("Root");
-    
+
     // Add intermediate folders from navigation stack
     for (String folderUri in _navigationStack) {
       if (folderUri != _vaultUri) {
@@ -1313,7 +1285,7 @@ class _MyHomePageState
         }
       }
     }
-    
+
     // Add current folder
     breadcrumbParts.add(_getCurrentFolderName());
 
@@ -1322,7 +1294,7 @@ class _MyHomePageState
       child: Row(
         children: [
           for (int i = 0; i < breadcrumbParts.length; i++) ...[
-            if (i > 0) 
+            if (i > 0)
               Icon(
                 Icons.chevron_right_rounded,
                 size: 16,
@@ -1332,7 +1304,9 @@ class _MyHomePageState
               breadcrumbParts[i],
               style: theme.textTheme.bodySmall?.copyWith(
                 color: colorScheme.onSurface.withOpacity(0.6),
-                fontWeight: i == breadcrumbParts.length - 1 ? FontWeight.w500 : FontWeight.normal,
+                fontWeight: i == breadcrumbParts.length - 1
+                    ? FontWeight.w500
+                    : FontWeight.normal,
               ),
             ),
           ],
