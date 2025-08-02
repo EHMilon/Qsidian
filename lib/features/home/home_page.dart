@@ -231,7 +231,7 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
     final colorScheme = theme.colorScheme;
 
     return SafeArea(
-      child: Padding(
+      child: SingleChildScrollView(
         padding: const EdgeInsets.all(24.0),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -597,76 +597,133 @@ class _MyHomePageState extends State<MyHomePage> with TickerProviderStateMixin {
             ),
           ),
 
-          // Main Content - QuickNoteWidget
+          // Main Content
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  // Welcome header
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    child: Column(
-                      children: [
-                        Text(
-                          'Quick Note',
-                          style: theme.textTheme.headlineSmall?.copyWith(
-                            fontWeight: FontWeight.bold,
-                            color: colorScheme.onSurface,
-                          ),
+            child: Column(
+              children: [
+                // Main welcome content - takes available space
+                Expanded(
+                  child: SingleChildScrollView(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: MediaQuery.of(context).size.height * 0.2,
+                      ),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 32,
+                          vertical: 16,
                         ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Create notes quickly and save them to your vault',
-                          textAlign: TextAlign.center,
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: colorScheme.onSurface.withValues(alpha: 0.7),
-                          ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              width: 80,
+                              height: 80,
+                              decoration: BoxDecoration(
+                                gradient: LinearGradient(
+                                  colors: [
+                                    colorScheme.primary,
+                                    colorScheme.secondary,
+                                  ],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: colorScheme.primary.withValues(
+                                      alpha: 0.3,
+                                    ),
+                                    blurRadius: 15,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
+                              ),
+                              child: Icon(
+                                Icons.edit_note_rounded,
+                                size: 40,
+                                color: colorScheme.onPrimary,
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+
+                            Text(
+                              'Welcome to Qsidian',
+                              style: theme.textTheme.headlineSmall?.copyWith(
+                                fontWeight: FontWeight.bold,
+                                color: colorScheme.onSurface,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+
+                            Text(
+                              'Swipe left to browse files\nSwipe right for more options',
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: colorScheme.onSurface.withValues(
+                                  alpha: 0.7,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+
+                            // Quick actions
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                FilledButton.icon(
+                                  onPressed: () {
+                                    _pageController.animateToPage(
+                                      0,
+                                      duration: const Duration(
+                                        milliseconds: 300,
+                                      ),
+                                      curve: Curves.easeInOut,
+                                    );
+                                  },
+                                  icon: const Icon(Icons.folder_rounded),
+                                  label: const Text('Browse Files'),
+                                ),
+                                const SizedBox(width: 16),
+                                OutlinedButton.icon(
+                                  onPressed: _selectVaultFolder,
+                                  icon: const Icon(Icons.folder_open_rounded),
+                                  label: const Text('Change Vault'),
+                                ),
+                              ],
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ),
+                ),
 
-                  // QuickNoteWidget
-                  QuickNoteWidget(
-                    vaultUri: _vaultUri,
-                    onNoteCreated: () {
-                      // Refresh the file list when a note is created
-                      _loadCurrentFolder();
-                    },
-                    onNoteDeleted: () {
-                      // Refresh the file list when a note is deleted
-                      _loadCurrentFolder();
-                    },
+                // QuickNoteWidget at the bottom
+                SafeArea(
+                  child: Padding(
+                    padding: EdgeInsets.only(
+                      left: 16.0,
+                      right: 16.0,
+                      top: 8.0,
+                      bottom: MediaQuery.of(context).viewInsets.bottom > 0
+                          ? 8.0
+                          : 16.0,
+                    ),
+                    child: QuickNoteWidget(
+                      vaultUri: _vaultUri,
+                      onNoteCreated: () {
+                        // Refresh the file list when a note is created
+                        _loadCurrentFolder();
+                      },
+                      onNoteDeleted: () {
+                        // Refresh the file list when a note is deleted
+                        _loadCurrentFolder();
+                      },
+                    ),
                   ),
-
-                  const SizedBox(height: 24),
-
-                  // Quick actions
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      FilledButton.icon(
-                        onPressed: () {
-                          _pageController.animateToPage(
-                            0,
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          );
-                        },
-                        icon: const Icon(Icons.folder_rounded),
-                        label: const Text('Browse Files'),
-                      ),
-                      const SizedBox(width: 16),
-                      OutlinedButton.icon(
-                        onPressed: _selectVaultFolder,
-                        icon: const Icon(Icons.folder_open_rounded),
-                        label: const Text('Change Vault'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ],

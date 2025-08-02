@@ -49,8 +49,8 @@ class _QuickNoteWidgetState extends State<QuickNoteWidget> {
   final FocusNode _contentFocusNode = FocusNode();
 
   // Content field expansion state
-  static const int _minLines = 3;
-  static const int _maxLines = 8;
+  static const int _minLines = 2;
+  static const int _maxLines = 4;
   int _currentLines = _minLines;
 
   @override
@@ -135,42 +135,40 @@ class _QuickNoteWidgetState extends State<QuickNoteWidget> {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: const EdgeInsets.all(12.0),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildHeader(),
-            const SizedBox(height: 12.0),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'Quick Note',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF8B5CF6),
+                  ),
+                ),
+                IconButton(
+                  onPressed: _onExpandPressed,
+                  icon: const Icon(Icons.north_east),
+                  iconSize: 18.0,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 20.0,
+                    minHeight: 20.0,
+                  ),
+                ),
+              ],
+            ),
             _buildTitleField(),
-            const SizedBox(height: 12.0),
+            const SizedBox(height: 8.0),
             _buildContentField(),
-            const SizedBox(height: 12.0),
+            const SizedBox(height: 8.0),
             _buildBottomToolbar(),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _buildHeader() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          'Quick Note',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: const Color(0xFF8B5CF6),
-          ),
-        ),
-        IconButton(
-          onPressed: _onExpandPressed,
-          icon: const Icon(Icons.north_east),
-          iconSize: 20.0,
-          padding: EdgeInsets.zero,
-          constraints: const BoxConstraints(minWidth: 24.0, minHeight: 24.0),
-        ),
-      ],
     );
   }
 
@@ -211,7 +209,7 @@ class _QuickNoteWidgetState extends State<QuickNoteWidget> {
         keyboardType: TextInputType.multiline,
         textInputAction: TextInputAction.newline,
         decoration: InputDecoration(
-          hintText: 'Write you QuickNote here.....',
+          hintText: 'Write your Quick Note here.....',
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(8.0),
             borderSide: BorderSide(
