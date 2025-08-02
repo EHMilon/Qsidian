@@ -68,6 +68,32 @@ class MainActivity : FlutterActivity() {
                 } else {
                     result.error("INVALID_ARGUMENT", "Folder URI cannot be null", null)
                 }
+            } else if (call.method == "createFile") {
+                val parentUriString = call.argument<String>("parentUri")
+                val fileName = call.argument<String>("fileName")
+                val content = call.argument<String>("content")
+                if (parentUriString != null && fileName != null && content != null) {
+                    val parentUri = Uri.parse(parentUriString)
+                    DocumentFileHelper.createFileAsync(applicationContext, parentUri, fileName, content) { fileUri ->
+                        if (fileUri != null) {
+                            result.success(fileUri.toString())
+                        } else {
+                            result.error("CREATE_FAILED", "Failed to create file", null)
+                        }
+                    }
+                } else {
+                    result.error("INVALID_ARGUMENT", "Parent URI, file name, or content cannot be null", null)
+                }
+            } else if (call.method == "deleteFile") {
+                val fileUriString = call.argument<String>("uri")
+                if (fileUriString != null) {
+                    val fileUri = Uri.parse(fileUriString)
+                    DocumentFileHelper.deleteFileAsync(applicationContext, fileUri) { success ->
+                        result.success(success)
+                    }
+                } else {
+                    result.error("INVALID_ARGUMENT", "File URI cannot be null", null)
+                }
             } else {
                 result.notImplemented()
             }

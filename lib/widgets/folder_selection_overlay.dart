@@ -80,12 +80,19 @@ class _FolderSelectionOverlayState extends State<FolderSelectionOverlay> {
         final subfolders = await _loadSubfolders(folderUri);
         setState(() {
           _subfolderCache[folderUri] = subfolders;
-          _expandedFolders.add(folderUri);
+          // Only expand if there are actually subfolders
+          if (subfolders.isNotEmpty) {
+            _expandedFolders.add(folderUri);
+          }
         });
       } else {
-        setState(() {
-          _expandedFolders.add(folderUri);
-        });
+        // Only expand if there are subfolders
+        final subfolders = _subfolderCache[folderUri]!;
+        if (subfolders.isNotEmpty) {
+          setState(() {
+            _expandedFolders.add(folderUri);
+          });
+        }
       }
     }
   }
@@ -214,13 +221,17 @@ class _FolderSelectionOverlayState extends State<FolderSelectionOverlay> {
       final hasSubfolders = _subfolderCache[folder.uri]?.isNotEmpty ?? false;
       final isSelected = widget.currentSelection == folder.uri;
 
+      // Show expand icon if we haven't checked for subfolders yet, or if we know there are subfolders
+      final showExpandIcon =
+          !_subfolderCache.containsKey(folder.uri) || hasSubfolders;
+
       widgets.add(
         _buildFolderTile(
           folderUri: folder.uri,
           folderName: folder.name,
           level: level,
           isSelected: isSelected,
-          hasSubfolders: hasSubfolders,
+          hasSubfolders: showExpandIcon,
           isExpanded: isExpanded,
           onToggle: () => _toggleFolder(folder.uri),
         ),
@@ -266,16 +277,19 @@ class _FolderSelectionOverlayState extends State<FolderSelectionOverlay> {
             if (hasSubfolders)
               GestureDetector(
                 onTap: onToggle,
-                child: Icon(
-                  isExpanded ? Icons.expand_more : Icons.chevron_right,
-                  size: 16.0,
-                  color: Theme.of(
-                    context,
-                  ).colorScheme.onSurface.withValues(alpha: 0.6),
+                child: Container(
+                  padding: const EdgeInsets.all(2.0),
+                  child: Icon(
+                    isExpanded ? Icons.expand_more : Icons.chevron_right,
+                    size: 16.0,
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
                 ),
               )
             else
-              const SizedBox(width: 16.0),
+              const SizedBox(width: 20.0),
 
             const SizedBox(width: 4.0),
 
@@ -294,15 +308,18 @@ class _FolderSelectionOverlayState extends State<FolderSelectionOverlay> {
 
             // Folder name
             Expanded(
-              child: Text(
-                folderName,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: isSelected
-                      ? Theme.of(context).colorScheme.primary
-                      : null,
-                  fontWeight: isSelected ? FontWeight.w500 : null,
+              child: Tooltip(
+                message: folderName,
+                child: Text(
+                  folderName,
+                  style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                    color: isSelected
+                        ? Theme.of(context).colorScheme.primary
+                        : null,
+                    fontWeight: isSelected ? FontWeight.w500 : null,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
-                overflow: TextOverflow.ellipsis,
               ),
             ),
 

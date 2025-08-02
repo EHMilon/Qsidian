@@ -40,6 +40,9 @@ class _QuickNoteWidgetState extends State<QuickNoteWidget> {
   bool _isEditingExistingNote = false;
   String? _currentEditingNoteUri;
 
+  // Saving state
+  bool _isSaving = false;
+
   // Overlay state
   OverlayEntry? _folderOverlay;
   OverlayEntry? _recentNotesOverlay;
@@ -267,28 +270,40 @@ class _QuickNoteWidgetState extends State<QuickNoteWidget> {
   }
 
   Widget _buildFolderButton() {
-    return InkWell(
-      onTap: _onFolderPressed,
-      borderRadius: BorderRadius.circular(8.0),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.folder,
-              size: 20.0,
-              color: Theme.of(context).colorScheme.primary,
+    return Flexible(
+      child: Tooltip(
+        message: _selectedFolderName,
+        child: InkWell(
+          onTap: _onFolderPressed,
+          borderRadius: BorderRadius.circular(8.0),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 8.0, vertical: 4.0),
+            constraints: const BoxConstraints(
+              maxWidth: 150.0,
+            ), // Limit max width
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.folder,
+                  size: 20.0,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
+                const SizedBox(width: 4.0),
+                Flexible(
+                  child: Text(
+                    _selectedFolderName,
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: Theme.of(context).colorScheme.primary,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 4.0),
-            Text(
-              _selectedFolderName,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: Theme.of(context).colorScheme.primary,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -326,8 +341,17 @@ class _QuickNoteWidgetState extends State<QuickNoteWidget> {
 
   Widget _buildSaveButton() {
     return IconButton(
-      onPressed: _onSavePressed,
-      icon: const Icon(Icons.save),
+      onPressed: _isSaving ? null : _onSavePressed,
+      icon: _isSaving
+          ? const SizedBox(
+              width: 16.0,
+              height: 16.0,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.0,
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF8B5CF6)),
+              ),
+            )
+          : const Icon(Icons.save),
       iconSize: 20.0,
       padding: const EdgeInsets.all(4.0),
       constraints: const BoxConstraints(minWidth: 32.0, minHeight: 32.0),
@@ -394,6 +418,75 @@ class _QuickNoteWidgetState extends State<QuickNoteWidget> {
     }
   }
 
+  // Helper methods for user feedback
+
+  void _showSuccessMessage(String message) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle, color: Colors.white, size: 20.0),
+            const SizedBox(width: 8.0),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: Colors.green,
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+      ),
+    );
+  }
+
+  void _showErrorMessage(String message) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.error, color: Colors.white, size: 20.0),
+            const SizedBox(width: 8.0),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: Colors.red,
+        duration: const Duration(seconds: 3),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+      ),
+    );
+  }
+
+  void _showLoadingMessage(String message) {
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const SizedBox(
+              width: 16.0,
+              height: 16.0,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.0,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+            ),
+            const SizedBox(width: 12.0),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: const Color(0xFF8B5CF6),
+        duration: const Duration(seconds: 1),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
+      ),
+    );
+  }
+
   void _onAttachmentPressed() {
     // TODO: Implement image attachment functionality
   }
@@ -406,7 +499,92 @@ class _QuickNoteWidgetState extends State<QuickNoteWidget> {
     // TODO: Implement recent notes overlay
   }
 
-  void _onSavePressed() {
-    // TODO: Implement note saving functionality
+  void _onSavePressed() async {
+    // Prevent multiple simultaneous saves
+    if (_isSaving) return;
+
+    // Validate input
+    final title = _titleController.text.trim();
+    final content = _contentController.text.trim();
+
+    if (title.isEmpty && content.isEmpty) {
+      _showErrorMessage('Please enter a title or content for your note');
+      return;
+    }
+
+    // Use title or first line of content as filename
+    final noteTitle = title.isNotEmpty
+        ? title
+        : _service.extractTitleFromContent(content, 'Quick Note');
+
+    // Ensure we have a folder selected
+    final folderUri = _selectedFolderUri ?? widget.vaultUri;
+    if (folderUri == null) {
+      _showErrorMessage('No vault selected');
+      return;
+    }
+
+    // Set saving state
+    setState(() {
+      _isSaving = true;
+    });
+
+    try {
+      // Create the note
+      final noteUri = await _service.createNote(folderUri, noteTitle, content);
+
+      // Clear input fields on successful save
+      _titleController.clear();
+      _contentController.clear();
+
+      // Reset editing state
+      setState(() {
+        _isEditingExistingNote = false;
+        _currentEditingNoteUri = null;
+        _currentLines = _minLines; // Reset content field height
+      });
+
+      // Show success feedback
+      _showSuccessMessage('Note saved successfully');
+
+      // Notify parent widget if callback is provided
+      widget.onNoteCreated?.call();
+
+      // Remove focus from input fields
+      _titleFocusNode.unfocus();
+      _contentFocusNode.unfocus();
+    } catch (e) {
+      // Handle errors and show user-friendly messages
+      String errorMessage = 'Failed to save note';
+
+      if (e is QuickNoteException) {
+        switch (e.code) {
+          case 'FILE_EXISTS':
+            errorMessage = 'A note with this name already exists';
+            break;
+          case 'PERMISSION_DENIED':
+            errorMessage =
+                'Permission denied. Please check storage permissions';
+            break;
+          case 'STORAGE_FULL':
+            errorMessage = 'Device storage is full';
+            break;
+          case 'INVALID_FOLDER':
+            errorMessage = 'Selected folder is not accessible';
+            break;
+          default:
+            errorMessage = e.message;
+        }
+      }
+
+      _showErrorMessage(errorMessage);
+    } finally {
+      // Reset saving state
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+        });
+      }
+    }
   }
 }

@@ -138,4 +138,49 @@ object DocumentFileHelper {
         }
     }
 
+    suspend fun createFileWithContent(context: Context, parentUri: Uri, fileName: String, content: String): Uri? = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val parentDocument = DocumentFile.fromTreeUri(context, parentUri)
+            val newFile = parentDocument?.createFile("text/markdown", fileName)
+            if (newFile != null) {
+                // Write content to the newly created file
+                val success = writeFileContent(context, newFile.uri, content)
+                if (success) {
+                    newFile.uri
+                } else {
+                    null
+                }
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error creating file with content: $fileName", e)
+            null
+        }
+    }
+
+    fun createFileAsync(context: Context, parentUri: Uri, fileName: String, content: String, callback: (Uri?) -> Unit) {
+        CoroutineScope(Dispatchers.Main).launch {
+            val fileUri = createFileWithContent(context, parentUri, fileName, content)
+            callback(fileUri)
+        }
+    }
+
+    suspend fun deleteFile(context: Context, fileUri: Uri): Boolean = withContext(Dispatchers.IO) {
+        return@withContext try {
+            val documentFile = DocumentFile.fromSingleUri(context, fileUri)
+            documentFile?.delete() ?: false
+        } catch (e: Exception) {
+            Log.e(TAG, "Error deleting file: $fileUri", e)
+            false
+        }
+    }
+
+    fun deleteFileAsync(context: Context, fileUri: Uri, callback: (Boolean) -> Unit) {
+        CoroutineScope(Dispatchers.Main).launch {
+            val success = deleteFile(context, fileUri)
+            callback(success)
+        }
+    }
+
 }

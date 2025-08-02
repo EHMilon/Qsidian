@@ -53,8 +53,8 @@ class QuickNoteService {
   /// Reads the content of a note file
   Future<String> readNoteContent(String noteUri) async {
     try {
-      final String content = await platform.invokeMethod('readFile', {
-        'uri': noteUri,
+      final String content = await platform.invokeMethod('readFileContent', {
+        'fileUri': noteUri,
       });
 
       // Update recent notes access time
@@ -69,8 +69,8 @@ class QuickNoteService {
   /// Updates an existing note file
   Future<void> updateNote(String noteUri, String content) async {
     try {
-      await platform.invokeMethod('writeFile', {
-        'uri': noteUri,
+      await platform.invokeMethod('writeFileContent', {
+        'fileUri': noteUri,
         'content': content,
       });
 
@@ -86,9 +86,10 @@ class QuickNoteService {
   /// Gets the folder structure for the vault
   Future<List<FileItem>> getFolderStructure(String vaultUri) async {
     try {
-      final List<dynamic> result = await platform.invokeMethod('listFiles', {
-        'uri': vaultUri,
-      });
+      final List<dynamic> result = await platform.invokeMethod(
+        'listFolderContents',
+        {'folderUri': vaultUri},
+      );
 
       return result
           .map(
@@ -112,9 +113,10 @@ class QuickNoteService {
   /// Gets all files in a folder (for finding markdown files)
   Future<List<FileItem>> getFilesInFolder(String folderUri) async {
     try {
-      final List<dynamic> result = await platform.invokeMethod('listFiles', {
-        'uri': folderUri,
-      });
+      final List<dynamic> result = await platform.invokeMethod(
+        'listFolderContents',
+        {'folderUri': folderUri},
+      );
 
       return result
           .map(
