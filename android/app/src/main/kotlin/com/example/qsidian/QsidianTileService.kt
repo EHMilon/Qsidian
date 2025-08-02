@@ -681,34 +681,34 @@ class QsidianTileService : TileService() {
     // ========================================
 
     /**
-     * Launches the Qsidian app using the primary method
-     * Uses proper intent flags for task management and app state transitions
+     * Launches the Qsidian overlay activity for quick note creation
+     * Uses proper intent flags for overlay display over Quick Settings
      * 
      * Requirements covered:
-     * - 1.3: Launch app when tile is tapped
-     * - 1.4: Bring app to foreground if already running
-     * - 3.3: Proper error handling for app launch
-     * - 5.2: App launch within 2 seconds
+     * - 1.3: Launch overlay when tile is tapped
+     * - 1.4: Display quick note overlay properly
+     * - 3.3: Proper error handling for overlay launch
+     * - 5.2: Overlay launch within 2 seconds
      * - 5.3: Handle exceptions gracefully during launch
      * 
      * Intent flags explanation:
-     * - NEW_TASK: Creates new task if app not running
-     * - CLEAR_TOP: Clears activities above MainActivity if app is running
-     * - SINGLE_TOP: Prevents duplicate MainActivity instances (works with singleTop launch mode)
+     * - NEW_TASK: Creates new task for overlay
+     * - CLEAR_TOP: Ensures clean overlay state
+     * - SINGLE_TOP: Prevents duplicate overlay instances
      */
     private fun launchQsidianApp() {
         try {
-            val intent = Intent(this, MainActivity::class.java).apply {
-                // Configure proper flags for app launch from Quick Settings
+            val intent = Intent(this, QuickNoteOverlayActivity::class.java).apply {
+                // Configure proper flags for overlay launch from Quick Settings
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or 
                        Intent.FLAG_ACTIVITY_CLEAR_TOP or 
                        Intent.FLAG_ACTIVITY_SINGLE_TOP
                 
-                // Add extra to indicate launch source for potential handling in MainActivity
+                // Add extra to indicate launch source for potential handling in overlay activity
                 putExtra("launch_source", "quick_settings_tile")
             }
             
-            Log.d(TAG, "Launching Qsidian app with intent flags: NEW_TASK|CLEAR_TOP|SINGLE_TOP")
+            Log.d(TAG, "Launching Qsidian overlay with intent flags: NEW_TASK|CLEAR_TOP|SINGLE_TOP")
             
             // Use startActivityAndCollapse to launch app and collapse Quick Settings panel
             startActivityAndCollapse(intent)

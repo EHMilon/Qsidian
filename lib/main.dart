@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:qsidian/features/home/home_page.dart'; // Import MyHomePage from its new location
+import 'package:qsidian/widgets/quick_note_overlay_route.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   runApp(const MyApp());
@@ -35,7 +37,30 @@ class MyApp extends StatelessWidget {
         ),
       ),
       debugShowCheckedModeBanner: false,
-      home: const MyHomePage(), // Use MyHomePage from the new feature module
+      initialRoute: '/',
+      onGenerateRoute: (settings) {
+        switch (settings.name) {
+          case '/':
+            return MaterialPageRoute(builder: (_) => const MyHomePage());
+          case '/overlay':
+            return _createOverlayRoute();
+          default:
+            return MaterialPageRoute(builder: (_) => const MyHomePage());
+        }
+      },
+    );
+  }
+
+  /// Creates the overlay route for Quick Settings tile functionality
+  PageRoute _createOverlayRoute() {
+    return QuickNoteOverlayRoute(
+      vaultUri: null, // Will be loaded from SharedPreferences
+      onSave: () {
+        // Handle successful note save
+      },
+      onDismiss: () {
+        // Handle overlay dismissal
+      },
     );
   }
 }
