@@ -8,10 +8,10 @@ import io.flutter.plugin.common.MethodChannel
 
 /**
  * Overlay activity for displaying the Quick Note widget from Quick Settings tile
- * 
+ *
  * This activity provides a transparent overlay that displays the QuickNoteWidget
  * while keeping the Quick Settings panel visible in the background.
- * 
+ *
  * Requirements covered:
  * - 1.4: Quick note overlay displays properly
  * - 1.5: Overlay shows title and content fields as specified

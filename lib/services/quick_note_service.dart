@@ -2,16 +2,51 @@ import 'dart:convert';
 import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/file_item.dart';
-
+ 
 class QuickNoteService {
   static const platform = MethodChannel('com.example.qsidian/vault');
-
+  static const nativeQuickNoteChannel = MethodChannel('com.example.qsidian/native_quick_note');
+ 
   // SharedPreferences keys
   static const String _lastSelectedFolderUriKey = 'quick_note_last_folder_uri';
   static const String _lastSelectedFolderNameKey =
       'quick_note_last_folder_name';
   static const String _recentNotesKey = 'quick_note_recent_notes';
   static const int _maxRecentNotes = 5;
+ 
+  QuickNoteService() {
+    // Set up method handler for native quick note calls
+    nativeQuickNoteChannel.setMethodCallHandler(_handleNativeQuickNoteCall);
+  }
+ 
+  Future<dynamic> _handleNativeQuickNoteCall(MethodCall call) async {
+    switch (call.method) {
+      case 'saveQuickNote':
+        final Map<dynamic, dynamic> args = call.arguments;
+        final String title = args['title'];
+        final String content = args['content'];
+        // Assuming a default vault URI or loading it from preferences if needed
+        // For simplicity, let's use a dummy URI or a predefined one for now.
+        // In a real app, you'd load the default vault URI here.
+        final prefs = await SharedPreferences.getInstance();
+        final defaultVaultUri = prefs.getString(_lastSelectedFolderUriKey);
+ 
+        if (defaultVaultUri != null && defaultVaultUri.isNotEmpty) {
+          await createNote(defaultVaultUri, title, content);
+          return true; // Indicate success
+        } else {
+          throw PlatformException(
+            code: 'NO_DEFAULT_VAULT',
+            message: 'No default vault selected for saving quick notes.',
+          );
+        }
+      default:
+        throw PlatformException(
+          code: 'NOT_IMPLEMENTED',
+          message: 'Method ${call.method} not implemented.',
+        );
+    }
+  }
 
   // File operations
 

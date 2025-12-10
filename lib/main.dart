@@ -2,11 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:qsidian/features/home/home_page.dart'; // Import MyHomePage from its new location
 import 'package:qsidian/widgets/quick_note_overlay_route.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
-void main() {
+import 'package:qsidian/services/quick_note_service.dart'; // Import QuickNoteService
+ 
+void main() async {
+  // Ensure Flutter bindings are initialized before setting up MethodChannel
+  WidgetsFlutterBinding.ensureInitialized();
+  
+  // Initialize QuickNoteService to set up its MethodChannel listener
+  QuickNoteService();
   runApp(const MyApp());
 }
-
+ 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 

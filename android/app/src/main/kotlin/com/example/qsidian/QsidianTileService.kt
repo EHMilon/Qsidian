@@ -698,17 +698,17 @@ class QsidianTileService : TileService() {
      */
     private fun launchQsidianApp() {
         try {
-            val intent = Intent(this, QuickNoteOverlayActivity::class.java).apply {
+            val intent = Intent(this, NativeQuickNoteActivity::class.java).apply {
                 // Configure proper flags for overlay launch from Quick Settings
-                flags = Intent.FLAG_ACTIVITY_NEW_TASK or 
-                       Intent.FLAG_ACTIVITY_CLEAR_TOP or 
+                flags = Intent.FLAG_ACTIVITY_NEW_TASK or
+                       Intent.FLAG_ACTIVITY_CLEAR_TOP or
                        Intent.FLAG_ACTIVITY_SINGLE_TOP
                 
                 // Add extra to indicate launch source for potential handling in overlay activity
                 putExtra("launch_source", "quick_settings_tile")
             }
             
-            Log.d(TAG, "Launching Qsidian overlay with intent flags: NEW_TASK|CLEAR_TOP|SINGLE_TOP")
+            Log.d(TAG, "Launching Native Quick Note overlay with intent flags: NEW_TASK|CLEAR_TOP|SINGLE_TOP")
             
             // Use startActivityAndCollapse to launch app and collapse Quick Settings panel
             startActivityAndCollapse(intent)
